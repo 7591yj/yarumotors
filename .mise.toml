@@ -16,6 +16,30 @@ else
 fi
 '''
 
+[tasks.build]
+dir = "{{cwd}}"
+run = '''
+if [ -f package.json ]; then
+  pnpm run build
+elif [ -f pyproject.toml ]; then
+  uv build
+else
+  echo "No manifest found in $(pwd)"
+fi
+'''
+
+[tasks.run]
+dir = "{{cwd}}"
+run = '''
+if [ -f package.json ]; then
+  pnpm run start
+elif [ -f pyproject.toml ]; then
+  uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+else
+  echo "No manifest found in $(pwd)"
+fi
+'''
+
 [tasks.lint]
 dir = "{{cwd}}"
 run = '''
@@ -23,6 +47,18 @@ if [ -f package.json ]; then
   pnpm run lint
 elif [ -f pyproject.toml ]; then
   uvx ruff check --exclude .venv
+else
+  echo "No manifest found in $(pwd)"
+fi
+'''
+
+[tasks.lintfix]
+dir = "{{cwd}}"
+run = '''
+if [ -f package.json ]; then
+  pnpm run lint --fix
+elif [ -f pyproject.toml ]; then
+  uvx ruff check --fix --exclude .venv
 else
   echo "No manifest found in $(pwd)"
 fi

@@ -176,3 +176,7 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/node,macos
 
+# Build outputs
+eslint.config.*mjs
+eslint.config.*.map
+eslint.config.d.mts

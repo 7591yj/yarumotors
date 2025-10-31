@@ -12,3 +12,7 @@ dev = ["pytest", "ruff", "httpx"]
 line-length = 88
 lint.select = ["E", "F", "W"]
 exclude = ["venv", "__pycache__"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["cache*", "yarumotors_bruno*"]
