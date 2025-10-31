@@ -4,9 +4,10 @@ version = "0.0.1"
 dependencies = [
   "fastapi",
   "uvicorn",
+  "httpx",
 ]
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "httpx"]
+dev = ["pytest", "ruff"]
 
 [tool.ruff]
 line-length = 88
