@@ -1,0 +1,53 @@
+[tools]
+node = "22"
+"npm:pnpm" = "10.7.1"
+python = "3.12"
+uv = "latest"
+
+[tasks.install]
+dir = "{{cwd}}"
+run = '''
+if [ -f package.json ]; then
+  pnpm install --frozen-lockfile
+elif [ -f pyproject.toml ]; then
+  uv sync --frozen --only-dev
+else
+  echo "No manifest found in $(pwd)"
+fi
+'''
+
+[tasks.lint]
+dir = "{{cwd}}"
+run = '''
+if [ -f package.json ]; then
+  pnpm run lint
+elif [ -f pyproject.toml ]; then
+  uvx ruff check --exclude .venv
+else
+  echo "No manifest found in $(pwd)"
+fi
+'''
+
+[tasks.format]
+dir = "{{cwd}}"
+run = '''
+if [ -f package.json ]; then
+  pnpm run format
+elif [ -f pyproject.toml ]; then
+  uvx ruff format
+else
+  echo "No manifest found in $(pwd)"
+fi
+'''
+
+[tasks.test]
+dir = "{{cwd}}"
+run = '''
+if [ -f package.json ]; then
+  pnpm test
+elif [ -f pyproject.toml ]; then
+  uv run pytest tests
+else
+  echo "No manifest found in $(pwd)"
+fi
+'''

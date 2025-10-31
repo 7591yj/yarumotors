@@ -1,0 +1,14 @@
+[project]
+name = "core"
+version = "0.0.1"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+]
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "httpx"]
+
+[tool.ruff]
+line-length = 88
+lint.select = ["E", "F", "W"]
+exclude = ["venv", "__pycache__"]
