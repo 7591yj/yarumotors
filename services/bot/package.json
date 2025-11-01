@@ -1,7 +1,8 @@
 {
-  "name": "worker",
+  "name": "bot",
   "version": "0.0.1",
   "scripts": {
+    "start": "node src/index.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
@@ -16,5 +17,9 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",
     "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.24.2",
+    "dotenv": "^17.2.3"
   }
 }
