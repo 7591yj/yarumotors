@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "start": "wrangler dev",
-    "register": "tsx src/register.ts",
+    "register": "tsx src/utils/register.ts",
     "format": "pnpm exec prettier . --write",
     "deploy": "wrangler deploy --minify",
     "test": "",

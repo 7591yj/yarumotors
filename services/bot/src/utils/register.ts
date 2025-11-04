@@ -5,7 +5,7 @@ import {
   RESTPostAPIApplicationCommandsJSONBody,
   Routes,
 } from "discord-api-types/v10";
-import * as commands from "./commands.js";
+import * as commands from "../commands.js";
 
 config({ path: ".env" });
 
