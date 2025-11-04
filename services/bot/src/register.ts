@@ -21,7 +21,7 @@ const applicationId =
   })();
 
 const commandList = Object.values(
-  commands
+  commands,
 ) as RESTPostAPIApplicationCommandsJSONBody[];
 
 async function registerCommands(): Promise<void> {
@@ -42,7 +42,7 @@ async function registerCommands(): Promise<void> {
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(
-      `Registration failed: ${res.status} ${res.statusText}\n${errText}`
+      `Registration failed: ${res.status} ${res.statusText}\n${errText}`,
     );
   }
 
