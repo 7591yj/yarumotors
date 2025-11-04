@@ -1,15 +1,7 @@
-import dotenv from "dotenv";
-import { Client, Events, GatewayIntentBits } from "discord.js";
+import { Hono } from "hono";
 
-dotenv.config();
-const token = process.env.DISCORD_TOKEN;
+const app = new Hono();
 
-console.log(token);
+app.get("/", (c) => c.text("Hello Cloudflare Workers!"));
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
-
-client.once(Events.ClientReady, (readyClient) => {
-  console.log(`Ready! Logged in as ${readyClient.user.tag}`);
-});
-
-client.login(token);
+export default app;
