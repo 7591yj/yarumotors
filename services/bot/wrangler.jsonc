@@ -3,24 +3,22 @@
   "name": "yarumotors",
   "main": "src/index.ts",
   "compatibility_date": "2025-11-04",
-  // "compatibility_flags": [
-  //   "nodejs_compat"
-  // ],
+  // "compatibility_flags": ["nodejs_compat"],
   // "vars": {
   //   "MY_VAR": "my-variable"
   // },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
-  //   }
-  // ],
+  "kv_namespaces": [
+    {
+      "binding": "KV_NAMESPACE",
+      "id": "e4eb346c87aa481da36445386880e55d",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "yarumotors",
+    },
+  ],
   // "d1_databases": [
   //   {
   //     "binding": "MY_DB",

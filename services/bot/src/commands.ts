@@ -4,3 +4,9 @@ export const PING_COMMAND = {
   integration_types: [0, 1],
   contexts: [0, 1, 2],
 };
+
+export const GET_SESSION_COMMAND = {
+  name: "session",
+  description: "Get session result",
+  integration_types: [0, 1],
+};

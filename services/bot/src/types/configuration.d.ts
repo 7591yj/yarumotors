@@ -6,4 +6,6 @@ export type Bindings = {
   WORKER_URL: string;
   COOKIE_SECRET: string;
   TOKEN_STORE: KVNamespace;
+  R2_BUCKET: R2Bucket;
+  KV_NAMESPACE: KVNamespace;
 };
