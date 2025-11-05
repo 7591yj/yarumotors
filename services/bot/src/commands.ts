@@ -10,3 +10,8 @@ export const GET_SESSION_COMMAND = {
   description: "Get session result",
   integration_types: [0, 1],
 };
+
+export const SETUP_COMMAND = {
+  name: "setup",
+  description: "Initialize Yarumotors channel and message",
+};

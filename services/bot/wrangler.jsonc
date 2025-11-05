@@ -9,7 +9,7 @@
   // },
   "kv_namespaces": [
     {
-      "binding": "KV_NAMESPACE",
+      "binding": "STORE",
       "id": "e4eb346c87aa481da36445386880e55d",
     },
   ],

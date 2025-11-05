@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "./services/core"
+		},
+		{
+			"path": "./services/bot"
+		}
+	],
+	"settings": {}
+}

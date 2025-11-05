@@ -7,5 +7,6 @@ export type Bindings = {
   COOKIE_SECRET: string;
   TOKEN_STORE: KVNamespace;
   R2_BUCKET: R2Bucket;
-  KV_NAMESPACE: KVNamespace;
+  STORE: KVNamespace;
+  GUILD_ID: string;
 };

@@ -16,6 +16,11 @@ import {
   COLOR_DISCORD_PURPLE,
 } from "./utils/consts";
 import { getGps } from "./utils/getGps";
+import {
+  getOrCreateYarumotorsChannel,
+  getOrCreateYarumotorsMessage,
+  updateYarumotorsMessage,
+} from "./utils/discordChannel";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -41,6 +46,8 @@ app.post("/interactions", async (c) => {
   if (!isValid) return c.text("Invalid signature.", 401);
 
   const interaction = JSON.parse(body) as APIInteraction;
+
+  console.log("Received interaction raw type:", interaction.type);
 
   switch (interaction.type) {
     // Handles Discord’s initial verification ping
@@ -73,6 +80,29 @@ app.post("/interactions", async (c) => {
                   timestamp: new Date().toISOString(),
                 },
               ],
+            },
+          });
+        }
+        // /setup
+        case commands.SETUP_COMMAND.name.toLowerCase(): {
+          const channelId = await getOrCreateYarumotorsChannel(c.env);
+          const embed = {
+            title: "Yarumotors Live Session",
+            description: "Initialized automatically.",
+            color: 0x5865f2,
+            timestamp: new Date().toISOString(),
+          };
+          const messageId = await getOrCreateYarumotorsMessage(
+            c.env,
+            channelId,
+            embed,
+          );
+
+          return c.json({
+            type: InteractionResponseType.ChannelMessageWithSource,
+            data: {
+              content: `Initialized in <#${channelId}>. Message ID ${messageId}.`,
+              flags: InteractionResponseFlags.EPHEMERAL,
             },
           });
         }
@@ -239,6 +269,32 @@ app.post("/interactions", async (c) => {
   //--------------------------------------------------------------
   console.error("Unknown Type");
   return c.json({ error: "Unknown Type" }, { status: 400 });
+});
+
+app.post("/initialize", async (c) => {
+  const channelId = await getOrCreateYarumotorsChannel(c.env);
+
+  const embed = {
+    title: "Yarumotors Live Session",
+    description: "This embed will be updated automatically.",
+    color: 0x5865f2,
+    timestamp: new Date().toISOString(),
+  };
+
+  const messageId = await getOrCreateYarumotorsMessage(c.env, channelId, embed);
+
+  return c.json({ channelId, messageId });
+});
+
+app.post("/update", async (c) => {
+  const embed = {
+    title: "Yarumotors Update",
+    description: "Updated automatically.",
+    color: 0x57f287,
+    timestamp: new Date().toISOString(),
+  };
+  await updateYarumotorsMessage(c.env, embed);
+  return c.text("Updated");
 });
 
 //--------------------------------------------------------------
