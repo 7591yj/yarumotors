@@ -1,12 +1,9 @@
 import fastapi
-import os
 from datetime import datetime
 from typing import Optional
 import httpx
 from fastapi import Header, HTTPException, Depends
 from pydantic import BaseModel
-import boto3
-from dotenv import load_dotenv
 from fastapi.responses import StreamingResponse
 import io
 import matplotlib
@@ -24,26 +21,21 @@ import fastf1.plotting
 from fastf1.core import Laps
 from fastf1.ergast import Ergast
 
-load_dotenv(".env")
-
-app = fastapi.FastAPI(
-    title="YaruMotors API", description="API for the YaruMotors project"
+from app.config import APP_TITLE, APP_DESCRIPTION
+from app.config import (
+    API_TOKEN,
+    CDN_URL,
+    BOT_DOMAIN,
+    R2_ACCOUNT_ID,
+    R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY,
+    R2_BUCKET,
+    R2_ENDPOINT,
+    r2,
 )
+from app.config import CACHE_DIR
 
-r2 = boto3.client(
-    "s3",
-    region_name="auto",
-    endpoint_url=f"https://{os.getenv('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com",
-    aws_access_key_id=os.getenv("R2_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("R2_SECRET_ACCESS_KEY"),
-)
-BUCKET = os.getenv("R2_BUCKET")
-
-fastf1.Cache.enable_cache("./cache")
-
-API_TOKEN = os.getenv("API_TOKEN", "local-dev-token")
-CDN_URL = os.getenv("CDN_URL", "http://localhost:8000/")
-BOT_DOMAIN = os.getenv("BOT_DOMAIN", "https://yarumotors.subdomain.workers.dev/")
+app = fastapi.FastAPI(title=APP_TITLE, description=APP_DESCRIPTION)
 
 # ------------------  CONFIG  ------------------
 
@@ -170,7 +162,7 @@ class SessionQuery(BaseModel):
 # TODO: REMOVE
 @app.get("/download/{filename}")
 async def download_file(filename: str):
-    obj = r2.get_object(Bucket=BUCKET, Key=filename)
+    obj = r2.get_object(Bucket=R2_BUCKET, Key=filename)
     stream = io.BytesIO(obj["Body"].read())
     return StreamingResponse(
         stream,
@@ -344,8 +336,8 @@ def generate_qualifying_asset(data: SessionQuery):
         buf = io.BytesIO()
         plt.savefig(buf, format="png")
         buf.seek(0)
-        r2.upload_fileobj(buf, BUCKET, f"{data.year}/{data.event}/qualifying.png")
-        file_url = f"https://{os.getenv('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com/{BUCKET}/{data.year}/{data.event}/qualifying.png"
+        r2.upload_fileobj(buf, R2_BUCKET, f"{data.year}/{data.event}/qualifying.png")
+        file_url = f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com/{R2_BUCKET}/{data.year}/{data.event}/qualifying.png"
         buf.close()
 
         return {

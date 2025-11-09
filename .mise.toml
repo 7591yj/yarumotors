@@ -34,7 +34,7 @@ run = '''
 if [ -f package.json ]; then
   pnpm run start
 elif [ -f pyproject.toml ]; then
-  uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+  uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 else
   echo "No manifest found in $(pwd)"
 fi
