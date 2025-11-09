@@ -8,6 +8,13 @@ dependencies = [
   "boto3>=1.40.64",
   "dotenv>=0.9.9",
   "python-multipart>=0.0.20",
+  "requests>=2.32.5",
+  "numpy>=2.3.4",
+  "matplotlib>=3.10.7",
+  "timple>=0.1.8",
+  "fastf1>=3.6.1",
+  "html2image>=2.0.7",
+  "hex-htmltoimg>=1.2.0",
 ]
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]

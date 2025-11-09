@@ -1,16 +1,18 @@
 import fastapi
-import fastf1
 import os
 from datetime import datetime
 from typing import Optional
 import httpx
-from fastapi import Header, HTTPException, Depends, UploadFile
+from fastapi import Header, HTTPException, Depends
 from pydantic import BaseModel
 import boto3
 from dotenv import load_dotenv
 from fastapi.responses import StreamingResponse
 import io
 import matplotlib
+from html2image import Html2Image
+
+from utils import notify_bot
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -20,6 +22,7 @@ from timple.timedelta import strftimedelta
 import fastf1
 import fastf1.plotting
 from fastf1.core import Laps
+from fastf1.ergast import Ergast
 
 load_dotenv(".env")
 
@@ -40,6 +43,107 @@ fastf1.Cache.enable_cache("./cache")
 
 API_TOKEN = os.getenv("API_TOKEN", "local-dev-token")
 CDN_URL = os.getenv("CDN_URL", "http://localhost:8000/")
+BOT_DOMAIN = os.getenv("BOT_DOMAIN", "https://yarumotors.subdomain.workers.dev/")
+
+# ------------------  CONFIG  ------------------
+
+TEAM_LOGOS = {
+    "mclaren": "https://media.formula1.com/image/upload/c_lfill,w_48/q_auto/v1740000000/common/f1/2025/mclaren/2025mclarenlogowhite.webp",
+    "red_bull": "https://media.formula1.com/image/upload/c_lfill,w_48/q_auto/v1740000000/common/f1/2025/redbullracing/2025redbullracinglogowhite.webp",
+    "ferrari": "https://media.formula1.com/image/upload/c_lfill,w_48/q_auto/v1740000000/common/f1/2025/ferrari/2025ferrarilogowhite.webp",
+    "mercedes": "https://media.formula1.com/image/upload/c_lfill,w_48/q_auto/v1740000000/common/f1/2025/mercedes/2025mercedeslogowhite.webp",
+    "williams": "https://media.formula1.com/image/upload/c_lfill,w_48/q_auto/v1740000000/common/f1/2025/williams/2025williamslogowhite.webp",
+    "aston_martin": "https://media.formula1.com/image/upload/c_lfill,w_48/q_auto/v1740000000/common/f1/2025/astonmartin/2025astonmartinlogowhite.webp",
+    "haas": "https://media.formula1.com/image/upload/c_lfill,w_48/q_auto/v1740000000/common/f1/2025/haas/2025haaslogowhite.webp",
+    "alpine": "https://media.formula1.com/image/upload/c_lfill,w_48/q_auto/v1740000000/common/f1/2025/alpine/2025alpinelogowhite.webp",
+    "sauber": "https://media.formula1.com/image/upload/c_lfill,w_48/q_auto/v1740000000/common/f1/2025/kicksauber/2025kicksauberlogowhite.webp",
+    "rb": "https://media.formula1.com/image/upload/c_lfill,w_48/q_auto/v1740000000/common/f1/2025/rb/2025rblogowhite.webp",
+}
+
+TEAM_COLORS = {
+    "mclaren": "#FF8000",
+    "red_bull": "#1E41FF",
+    "ferrari": "#DC0000",
+    "mercedes": "#00D2BE",
+    "williams": "#005AFF",
+    "aston_martin": "#006F62",
+    "haas": "#B6BABD",
+    "alpine": "#2293D1",
+    "sauber": "#52E252",
+    "rb": "#6692FF",
+}
+
+FALLBACK_COLOR = "#D0D0D0"  # neutral gray
+
+# ---------------------------------------------
+
+
+def generate_row(entry):
+    constructor = entry["constructorIds"][0]
+    name = f"{entry['givenName']} {entry['familyName']}"
+    logo = TEAM_LOGOS.get(constructor, "")
+    color = TEAM_COLORS.get(constructor, "#444")
+    html = f"""
+      <div class="row" style="background:{color};">
+      <span class="pos">{entry["position"]}</span>
+        <img class="logo" src="{logo}" alt="{constructor}">
+        <span class="name">{name}</span>
+        <span class="points">{entry["points"]} pts</span>
+      </div>
+    """
+    return html
+
+
+def generate_html(standings):
+    rows = [generate_row(e) for e in standings]
+    body_rows = "\n".join(rows)
+
+    html = f"""
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {{
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }}
+    .row {{
+      display: flex;
+      align-items: center;
+      padding: 6px 12px;
+      margin-bottom: 4px;
+      border-radius: 6px;
+    }}
+    .pos {{
+      width: 28px;
+      font-weight: bold;
+      text-align: right;
+      margin-right: 10px;
+    }}
+    .logo {{
+      width: 28px;
+      height: 28px;
+      margin-right: 10px;
+      object-fit: contain;
+    }}
+    .name {{
+      font-weight: 600;
+      font-size: 14px;
+    }}
+    .points {{
+      margin-left: auto;
+      font-size: 13px;
+    }}
+  </style>
+</head>
+<body>
+  {body_rows}
+</body>
+</html>
+"""
+    return html
 
 
 def require_auth(authorization: Optional[str] = Header(None)):
@@ -80,6 +184,12 @@ def health_check():
     return {"status": "ok", "time": datetime.now().isoformat()}
 
 
+@app.get("/worker-update")
+def worker_update():
+    result = notify_bot.notify_bot(BOT_DOMAIN)
+    return {"status": "ok", "time": datetime.now().isoformat()}
+
+
 @app.get("/manifest")
 def check_manifest(data: ManifestQuery):
     url = f"{CDN_URL}/{data.year}/{data.event}/{data.session}/{data.asset}.png"
@@ -91,10 +201,45 @@ def check_manifest(data: ManifestQuery):
     raise HTTPException(status_code=resp.status_code)
 
 
-@app.post("/session/race/generate", dependencies=[Depends(require_auth)])
+@app.post("/generate/driverstanding/current", dependencies=[Depends(require_auth)])
+def generate_driver_standing_asset():
+    try:
+        ergast = Ergast(result_type="pandas", auto_cast=True)
+        standing = ergast.get_driver_standings(season="current")
+
+        description = standing.description.to_dict(orient="records")
+        standings_df = standing.content[0]
+        standings_data = standings_df.to_dict(orient="records")
+
+        hti = Html2Image()
+        htu_output = generate_html(standings_data)
+        hti = Html2Image(size=(500, 1100))
+        hti.screenshot(html_str=htu_output, save_as="f1_standings.png")
+
+        return {"description": description, "standings": standings_data}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/generate/constructorstanding/current", dependencies=[Depends(require_auth)])
+def generate_constructor_standing_asset():
+    try:
+        ergast = Ergast(result_type="pandas", auto_cast=True)
+        standing = ergast.get_constructor_standings(season="current")
+
+        description = standing.description.to_dict(orient="records")
+        standings_df = standing.content[0]
+        standings_data = standings_df.to_dict(orient="records")
+
+        return {"description": description, "standings": standings_data}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/generate/session/race/", dependencies=[Depends(require_auth)])
 def generate_race_asset(data: SessionQuery):
     """
-    Trigger generation for a specific session
+    Trigger generation for a race session result
     Payload example:
       {
         "year": 2025,
@@ -116,7 +261,32 @@ def generate_race_asset(data: SessionQuery):
         return {"status": "error", "details": str(e)}
 
 
-@app.post("/session/qualifying/generate", dependencies=[Depends(require_auth)])
+@app.post("/generate/session/sprint/", dependencies=[Depends(require_auth)])
+def generate_sprint_asset(data: SessionQuery):
+    """
+    Trigger generation for a sprint session result
+    Payload example:
+      {
+        "year": 2025,
+        "event": "Sao Paulo",
+      }
+    """
+    try:
+        session = fastf1.get_session(data.year, data.event, "Sprint")
+        session.load()
+        if session.results is None or session.results.empty:
+            return {"status": "unavailable"}
+        results = session.results[["Abbreviation", "Position", "Time", "Status"]]
+        return {
+            "status": "ready",
+            "event": f"{data.event} Sprint",
+            "results": results.to_dict(orient="records"),
+        }
+    except Exception as e:
+        return {"status": "error", "details": str(e)}
+
+
+@app.post("/generate/session/qualifying", dependencies=[Depends(require_auth)])
 def generate_qualifying_asset(data: SessionQuery):
     """
     Trigger generation for a qualifying session result
